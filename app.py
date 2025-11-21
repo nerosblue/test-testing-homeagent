@@ -13,47 +13,98 @@ st.set_page_config(
 # --- 2. Region Hierarchy Mapping ---
 # Since the CSV is "flat" (doesn't say which city is in which county), 
 # we define the groups manually here.
+
+Regions = {[
+    "London", "South East", "East of England", "South West", "West Midlands", "East Midlands", "North West", "Yorkshire and Humber","North East"
+]
+    
+}
+
 REGION_MAPPING = {
-    "Nottinghamshire": [
-        "Nottingham", "Ashfield", "Bassetlaw", "Broxtowe", "Gedling", 
-        "Mansfield", "Newark and Sherwood", "Rushcliffe", "Nottinghamshire"
-    ],
-    "Derbyshire": [
-        "Derby", "Amber Valley", "Bolsover", "Chesterfield", "Derbyshire Dales", 
-        "Erewash", "High Peak", "North East Derbyshire", "South Derbyshire", "Derbyshire"
-    ],
+    #London doesn't have any bourghs so skip county section
     "London": [
         "London", "Barking and Dagenham", "Barnet", "Bexley", "Brent", "Bromley", 
-        "Camden", "City of London", "Croydon", "Ealing", "Enfield", "Greenwich", 
+        "Camden", "City of London", "City of Westminster", "Croydon", "Ealing", "Enfield", "Greenwich", 
         "Hackney", "Hammersmith and Fulham", "Haringey", "Harrow", "Havering", 
         "Hillingdon", "Hounslow", "Islington", "Kensington and Chelsea", 
         "Kingston upon Thames", "Lambeth", "Lewisham", "Merton", "Newham", 
         "Redbridge", "Richmond upon Thames", "Southwark", "Sutton", "Tower Hamlets", 
-        "Waltham Forest", "Wandsworth", "Westminster"
+        "Waltham Forest", "Wandsworth"
     ],
-    "Greater Manchester": [
-        "Manchester", "Bolton", "Bury", "Oldham", "Rochdale", "Salford", 
-        "Stockport", "Tameside", "Trafford", "Wigan", "Greater Manchester"
+    "South East":[
+        "Brighton and Hove", "Buckinghamshire", "East Sussex", "Hampshire", "Isle of Wight", "Kent", "Medway", 
+        "Milton Keynes", "Oxfordshire", "Portsmouth", "Reading", "Slough", "Southhampton", "Surrey", "West Berkshire",
+        "West Sussex", "Windsor and Maidenhead", "Wokingham"
+    ]
+
+    "South East":[
+    # Traditional Counties (These have children LADs)
+    'Buckinghamshire': ['Aylesbury Vale','Chiltern','South Bucks','Wycombe'],
+    'East Sussex': ['Eastbourne','Hastings','Lewes','Rother','Wealden'],
+    'Hampshire': ['Basingstoke and Deane','East Hampshire','Eastleigh','Fareham','Gosport','Hart','Havant','New Forest','Rushmoor','Test Valley','Winchester'],
+    'Kent': ['Ashford','Canterbury','Dartford','Dover','Gravesham','Maidstone','Sevenoaks','Shepway','Swale','Thanet','Tonbridge and Malling','Tunbridge Wells'],
+    'Oxfordshire': ['Cherwell','Oxford','South Oxfordshire','Vale of White Horse','West Oxfordshire'],
+    'Surrey': ['Elmbridge','Epsom and Ewell','Guildford','Mole Valley','Reigate and Banstead','Runnymede','Spelthorne','Surrey Heath','Tandridge','Waverley','Woking'],
+    'West Sussex': ['Adur','Arun','Chichester','Crawley','Horsham','Mid Sussex','Worthing'],
+# Unitary Authorities (These are their own Local Authority - they have no children LADs)
+    'Brighton and Hove': ['Brighton and Hove'],'Isle of Wight': ['Isle of Wight'],'Medway': ['Medway'],'Milton Keynes': ['Milton Keynes'],'Portsmouth': ['Portsmouth'],'Reading': ['Reading'],
+    'Slough': ['Slough'],'Southampton': ['Southampton'],'West Berkshire': ['West Berkshire'],'Windsor and Maidenhead': ['Windsor and Maidenhead'],'Wokingham': ['Wokingham'],}]
+    
+# ---------------------------------------East of England----------------------------------------------------------------
+# Parent selection
+    "South East";[
+    'Bedford', 'Central Bedfordshire', 'Luton', 'Peterborough', 'Southend-on-Sea', 'Thurrock', # Unitary Authorities
+    'Cambridgeshire', 'Essex', 'Hertfordshire', 'Norfolk', 'Suffolk'
+    #Dropdown of counties without tiers
+    'Bedford': ['Bedford'], 'Central Bedfordshire': ['Central Bedfordshire'], 'Luton': ['Luton'],
+    'Peterborough': ['Peterborough'], 'Southend-on-Sea': ['Southend-on-Sea'], 'Thurrock': ['Thurrock'],
+    # Counties with cities in them
+    'Cambridgeshire': ['Cambridge', 'East Cambridgeshire', 'Fenland', 'Huntingdonshire', 'South Cambridgeshire'],
+    'Essex': ['Braintree', 'Brentwood', 'Castle Point', 'Chelmsford', 'Colchester', 'Epping Forest', 'Harlow', 'Maldon', 'Rochford', 'Tendring', 'Uttlesford'],
+    'Hertfordshire': ['Broxbourne', 'Dacorum', 'East Hertfordshire', 'Hertsmere', 'North Hertfordshire', 'St. Albans', 'Stevenage', 'Three Rivers', 'Watford', 'Welwyn Hatfield'],
+    'Norfolk': ['Breckland', 'Broadland', 'Great Yarmouth', 'King\'s Lynn and West Norfolk', 'North Norfolk', 'Norwich', 'South Norfolk'],
+    'Suffolk': ['Babergh', 'East Suffolk', 'Ipswich', 'Mid Suffolk', 'West Suffolk'],
+# ---------------------------------------South West----------------------------------------------------------------
+SOUTH_WEST_GEOGRAPHY = {
+    # Traditional Counties (These have children LADs)
+    'Dorset': ['Dorset',],
+    'Gloucestershire': ['Cheltenham','Cotswold','Forest of Dean','Gloucester','Stroud','Tewkesbury'],
+    'Somerset': ['Mendip','Sedgemoor','Somerset West and Taunton','South Somerset'],
+    'Wiltshire': ['Wiltshire', # Wiltshire is a Unitary Authority covering the former County Area (excluding Swindon)],
+    'Devon': ['East Devon','Exeter','Mid Devon','North Devon','South Hams','Teignbridge','Torridge','West Devon'],
+    # Unitary Authorities (These are their own Local Authority)
+    'Bath and North East Somerset': ['Bath and North East Somerset'],'Bournemouth, Christchurch and Poole': ['Bournemouth, Christchurch and Poole'],'Bristol, City of': ['Bristol, City of'],
+    'Cornwall': ['Cornwall'],'Isles of Scilly': ['Isles of Scilly'],'North Somerset': ['North Somerset'],
+    'Plymouth': ['Plymouth'],'South Gloucestershire': ['South Gloucestershire'],'Torbay': ['Torbay'],
+}
+# ---------------------------------------West Midlands----------------------------------------------------------------
+WEST_MIDLANDS_GEOGRAPHY = {
+    # Traditional Counties / Unitary Authorities that are Two-Tier
+    'Staffordshire': ['Cannock Chase','East Staffordshire','Lichfield','Newcastle-under-Lyme','South Staffordshire','Stafford','Staffordshire Moorlands','Tamworth'],
+    'Warwickshire': ['North Warwickshire','Nuneaton and Bedworth','Rugby','Stratford-on-Avon','Warwick'],
+    'Worcestershire': ['Bromsgrove','Malvern Hills','Redditch','Worcester','Wychavon','Wyre Forest'],
+
+    # Metropolitan County (Its LADs are Metropolitan Boroughs)
+    'West Midlands': ['Birmingham',
+'Coventry',
+        'Dudley',
+        'Sandwell',
+        'Solihull',
+        'Walsall',
+        'Wolverhampton'
     ],
-    "West Midlands": [
-        "Birmingham", "Coventry", "Dudley", "Sandwell", "Solihull", "Walsall", 
-        "Wolverhampton", "West Midlands"
-    ],
-    "West Yorkshire": [
-        "Leeds", "Bradford", "Calderdale", "Kirklees", "Wakefield", "West Yorkshire"
-    ],
-    "Merseyside": [
-        "Liverpool", "Knowsley", "St Helens", "Sefton", "Wirral", "Merseyside"
-    ],
-    "South Yorkshire": [
-        "Sheffield", "Barnsley", "Doncaster", "Rotherham", "South Yorkshire"
-    ],
-    "Tyne and Wear": [
-        "Newcastle upon Tyne", "Gateshead", "North Tyneside", "South Tyneside", "Sunderland", "Tyne and Wear"
-    ],
-    "Surrey": [
-        "Elmbridge", "Epsom and Ewell", "Guildford", "Mole Valley", "Reigate and Banstead", 
-        "Runnymede", "Spelthorne", "Surrey Heath", "Tandridge", "Waverley", "Woking", "Surrey"
+
+    # Single-Tier Unitary Authorities (LAD is the same as the County name)
+    'Herefordshire': ['Herefordshire, County of'], # Note the full name in the HPI data
+    'Shropshire': ['Shropshire'],
+    'Stoke-on-Trent': ['Stoke-on-Trent'],
+    'Telford and Wrekin': ['Telford and Wrekin']
+}
+
+# List of all Single-Tier Aggregates (used for logic check)
+SINGLE_TIER_AUTHORITIES = [
+    'Herefordshire', 'Shropshire', 'Stoke-on-Trent', 'Telford and Wrekin'
+]
     ],
     # This key allows users to find ANY region if it's not in the groups above
     "All Regions (A-Z)": [] 
