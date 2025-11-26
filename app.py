@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from datetime import date
 
 # Set up the Streamlit page configuration
@@ -11,22 +10,12 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Data Loading and Preprocessing ---
-
+# --- Data Loading ---
 @st.cache_data
 def load_data():
-    """Loads and preprocesses the UK HPI data."""
-    # Load the new CSV file
     df = pd.read_csv("UK-HPI-full-Shorted 2.csv")
-
-    # Convert Date column to datetime objects using the expected format
-    # Using 'coerce' for errors to turn invalid dates into NaT
     df['Date'] = pd.to_datetime(df['Date'], format='%d/%m/%Y', errors='coerce')
-    
-    # Drop rows where Date or RegionName is missing
     df = df.dropna(subset=['Date', 'RegionName'])
-
-    # Ensure necessary columns are numeric, coercing errors to NaN
     numeric_cols = [
         'AveragePrice', '12m%Change', 
         'SemiDetachedPrice', 'TerracedPrice', 'FlatPrice', 
@@ -34,195 +23,122 @@ def load_data():
     ]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
-    
     return df
 
-data_load_state = st.text('Loading data...')
 try:
     df = load_data()
-    data_load_state.success('Data loaded and processed successfully.')
 except Exception as e:
-    data_load_state.error(f"Error loading data: {e}")
+    st.error(f"Error loading data: {e}")
     st.stop()
 
-
-# --- Sidebar (Navigation Tab) for Filtering ---
-
-# Get unique regions for the dropdown
+# --- Sidebar ---
 all_regions = sorted(df['RegionName'].unique())
-
 st.sidebar.header("Navigation Tab: Filter by region")
 st.sidebar.subheader("Afternoon Amber")
-# 1. Region Dropdown
-default_region = 'Nottinghamshire' if 'Nottinghamshire' in all_regions else (all_regions[0] if all_regions else 'No Region')
-selected_region = st.sidebar.selectbox(
-    "Select Region to Analyse:",
-    options=all_regions,
-    index=all_regions.index(default_region) if default_region in all_regions else 0
-)
 
-# 2. Time Period Selection (Date Range)
+default_region = 'Nottinghamshire' if 'Nottinghamshire' in all_regions else all_regions[0]
+selected_region = st.sidebar.selectbox("Select Region to Analyse:", options=all_regions, index=all_regions.index(default_region))
+
 min_date = df['Date'].min().date()
 max_date = df['Date'].max().date()
+date_range = st.sidebar.date_input("Select Time Period:", value=(min_date, max_date), min_value=min_date, max_value=max_date)
 
-# Note: st.date_input behavior is typically to drop downwards by default.
-date_range = st.sidebar.date_input(
-    "Select Time Period:",
-    value=(min_date, max_date),
-    min_value=min_date,
-    max_value=max_date
-)
-
-# Ensure date_range has two elements (start and end date)
 if len(date_range) == 2:
     start_date = pd.to_datetime(date_range[0])
     end_date = pd.to_datetime(date_range[1])
 else:
-    # Fallback if the user only selected one date
     start_date = pd.to_datetime(min_date)
     end_date = pd.to_datetime(max_date)
 
-# --- Data Filtering ---
-filtered_df = df[
-    (df['RegionName'] == selected_region) &
-    (df['Date'] >= start_date) &
-    (df['Date'] <= end_date)
-].sort_values(by='Date')
-
-# Filter for the latest month's data in the selected period for bar charts/metrics
+# Filter Data
+filtered_df = df[(df['RegionName'] == selected_region) & (df['Date'] >= start_date) & (df['Date'] <= end_date)].sort_values(by='Date')
 latest_date = filtered_df['Date'].max()
-# Ensure we have data for the latest date before proceeding
 latest_data_rows = filtered_df[filtered_df['Date'] == latest_date]
 
 if filtered_df.empty or latest_data_rows.empty:
-    st.error(f"No data available for **{selected_region}** in the selected time period.")
+    st.error(f"No data available for **{selected_region}**.")
     st.stop()
 
-# We take the first row of the latest data (should only be one per date/region)
 latest_data_row = latest_data_rows.iloc[0]
-
 
 # --- Main Dashboard Content ---
 
 st.title(f"HomeAgent Dashboard Home for {selected_region}")
 st.markdown("This is the historic price change over time up to June 2025")
 
-# --- Visualisation 1: Average Price Time Series Chart ---
-# No longer inside a column, takes full width
-st.subheader("Price Trend Over Time")
+# --- VISUALISATION SECTION ---
+# To get "Top Left" and "Top Middle", we MUST use columns to split the screen horizontally.
+# We create 2 spaces here.
+col_left, col_right = st.columns(2, gap="medium")
 
-fig_price = px.line(
-    filtered_df.dropna(subset=['AveragePrice']), # Drop NaNs for cleaner line plot
-    x='Date',
-    y='AveragePrice',
-    title=f'Average House Price Trend ({filtered_df["Date"].min().strftime("%Y")} - {filtered_df["Date"].max().strftime("%Y")})',
-    labels={'AveragePrice': 'Average Price (£)', 'Date': 'Date'},
-    template="plotly_white"
-)
-fig_price.update_yaxes(tickprefix='£')
-fig_price.update_layout(hovermode="x unified", title_font_size=16)
-st.plotly_chart(fig_price, use_container_width=True)
-
-
-# --- Visualisation 2: House Type Prices Bar Chart ---
-# No longer inside a column, takes full width
-st.subheader("House type prices over time")
-
-# Create a DataFrame for the latest month's house type prices
-house_type_prices = {
-    'House Type': ['Semi-Detached', 'Terraced', 'Flat'],
-    'Price': [
-        latest_data_row['SemiDetachedPrice'],
-        latest_data_row['TerracedPrice'],
-        latest_data_row['FlatPrice']
-    ]
-}
-df_house_types = pd.DataFrame(house_type_prices).dropna(subset=['Price'])
-
-if not df_house_types.empty:
-    fig_types = px.bar(
-        df_house_types,
-        x='House Type',
-        y='Price',
-        title=f'Avg. Price by House Type ({latest_date.strftime("%b %Y")})',
-        labels={'Price': 'Average Price (£)'},
-        color='House Type',
-        template="plotly_white",
+# 1. TOP LEFT: Time Series
+with col_left:
+    st.subheader("Price Trend Over Time")
+    fig_price = px.line(
+        filtered_df.dropna(subset=['AveragePrice']),
+        x='Date',
+        y='AveragePrice',
+        title=f'Avg. House Price Trend',
+        labels={'AveragePrice': 'Price (£)'},
+        template="plotly_white"
     )
-    fig_types.update_yaxes(tickprefix='£')
-    fig_types.update_layout(showlegend=False, title_font_size=16)
-    st.plotly_chart(fig_types, use_container_width=True)
-else:
-    st.info("House type data (Semi-Detached, Terraced, Flat) is not available for the latest selected date.")
+    fig_price.update_yaxes(tickprefix='£')
+    fig_price.update_layout(hovermode="x unified", title_font_size=16, height=400)
+    st.plotly_chart(fig_price, use_container_width=True)
 
+# 2. TOP MIDDLE (Right): Bar Chart
+with col_right:
+    st.subheader("House type prices over time")
+    
+    house_type_prices = {
+        'House Type': ['Semi-Detached', 'Terraced', 'Flat'],
+        'Price': [latest_data_row['SemiDetachedPrice'], latest_data_row['TerracedPrice'], latest_data_row['FlatPrice']]
+    }
+    df_house_types = pd.DataFrame(house_type_prices).dropna(subset=['Price'])
 
-# --- Bottom Section: Key Metrics ---
+    if not df_house_types.empty:
+        fig_types = px.bar(
+            df_house_types,
+            x='House Type',
+            y='Price',
+            title=f'Prices by Type ({latest_date.strftime("%b %Y")})',
+            labels={'Price': 'Price (£)'},
+            color='House Type',
+            template="plotly_white",
+        )
+        fig_types.update_yaxes(tickprefix='£')
+        fig_types.update_layout(showlegend=False, title_font_size=16, height=400)
+        st.plotly_chart(fig_types, use_container_width=True)
+    else:
+        st.info("House type data not available.")
+
+# --- BOTTOM SECTION: METRICS ---
 st.markdown("---")
 st.subheader(f"Key Metrics for {latest_date.strftime('%B %Y')}")
 
-# We create 5 columns here so the metrics sit side-by-side along the bottom
+# We create 5 small columns here so the metrics align in a horizontal row at the bottom
 m1, m2, m3, m4, m5 = st.columns(5)
 
-# --- Metric 1: Latest Average Price ---
 with m1:
-    latest_price = latest_data_row['AveragePrice']
-    if not pd.isna(latest_price):
-        st.metric(
-            label="Avg Price (All)",
-            value=f"£{latest_price:,.0f}"
-        )
-    else:
-         st.metric(label="Avg Price (All)", value="N/A")
+    val = latest_data_row['AveragePrice']
+    st.metric("Avg Price (All)", f"£{val:,.0f}" if not pd.isna(val) else "N/A")
 
-# --- Metric 2: Latest 12-Month Change ---
 with m2:
-    annual_change = latest_data_row['12m%Change']
-    if not pd.isna(annual_change):
-        delta_val = f"{annual_change:.1f}%"
-        st.metric(
-            label="Annual Change (12m%)",
-            value=f"{annual_change:.1f}%",
-            delta=delta_val,
-            delta_color="normal" if annual_change < 0 else "inverse" 
-        )
-    else:
-        st.metric(label="Annual Change (12m%)", value="N/A")
+    val = latest_data_row['12m%Change']
+    st.metric("Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A", 
+              delta=f"{val:.1f}%" if not pd.isna(val) else None,
+              delta_color="normal" if (not pd.isna(val) and val < 0) else "inverse")
 
-# --- Metric 3: First Time Buyer (FTB) Price ---
 with m3:
-    ftb_price = latest_data_row['FTBPrice']
-    if not pd.isna(ftb_price):
-        st.metric(
-            label="FTB Price",
-            value=f"£{ftb_price:,.0f}"
-        )
-    else:
-        st.metric(label="FTB Price", value="N/A")
+    val = latest_data_row['FTBPrice']
+    st.metric("FTB Price", f"£{val:,.0f}" if not pd.isna(val) else "N/A")
 
-# --- Metric 4: FTB Index ---
 with m4:
-    ftb_index = latest_data_row['FTBIndex']
-    if not pd.isna(ftb_index):
-        st.metric(
-            label="FTB Index",
-            value=f"{ftb_index:.1f}"
-        )
-    else:
-        st.metric(label="FTB Index", value="N/A")
-    
-# --- Metric 5: FTB 12m% Change ---
-with m5:
-    ftb_annual_change = latest_data_row['FTB12m%Change']
-    if not pd.isna(ftb_annual_change):
-        delta_val_ftb = f"{ftb_annual_change:.1f}%"
-        st.metric(
-            label="FTB Annual Change",
-            value=f"{ftb_annual_change:.1f}%",
-            delta=delta_val_ftb,
-            delta_color="normal" if ftb_annual_change < 0 else "inverse" 
-        )
-    else:
-        st.metric(label="FTB Annual Change", value="N/A")
+    val = latest_data_row['FTBIndex']
+    st.metric("FTB Index", f"{val:.1f}" if not pd.isna(val) else "N/A")
 
-st.markdown("---")
-st.caption(f"Showing data for: {selected_region}. Filter the time period using the sidebar.")
+with m5:
+    val = latest_data_row['FTB12m%Change']
+    st.metric("FTB Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A",
+              delta=f"{val:.1f}%" if not pd.isna(val) else None,
+              delta_color="normal" if (not pd.isna(val) and val < 0) else "inverse")
