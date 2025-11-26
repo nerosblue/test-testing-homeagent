@@ -71,13 +71,11 @@ latest_data_row = latest_data_rows.iloc[0]
 st.title(f"HomeAgent Dashboard Home for {selected_region}")
 st.markdown("This is the historic price change over time up to June 2025")
 
-# --- VISUALISATION SECTION ---
-# To get "Top Left" and "Top Middle", we MUST use columns to split the screen horizontally.
-# We create 2 spaces here.
-col_left, col_right = st.columns(2, gap="medium")
 
-# 1. TOP LEFT: Time Series
-with col_left:
+col_series, col_bar = st.columns(2, gap="medium")
+
+# 1. time series: average over selected time period
+with col_series:
     st.subheader("Price Trend Over Time")
     fig_price = px.line(
         filtered_df.dropna(subset=['AveragePrice']),
@@ -91,8 +89,8 @@ with col_left:
     fig_price.update_layout(hovermode="x unified", title_font_size=16, height=400)
     st.plotly_chart(fig_price, use_container_width=True)
 
-# 2. TOP MIDDLE (Right): Bar Chart
-with col_right:
+# 2. bar chart: house types
+with col_bar:
     st.subheader("House type prices over time")
     
     house_type_prices = {
@@ -117,13 +115,12 @@ with col_right:
     else:
         st.info("House type data not available.")
 
-# --- BOTTOM SECTION: METRICS ---
+# 3. key metrics 
 st.markdown("---")
-st.subheader(f"Key Metrics for {latest_date.strftime('%B %Y')}")
-
-# We create 5 small columns here so the metrics align in a horizontal row at the bottom
+st.subheader(f"Key First Time Buyers Metrics for {latest_date.strftime('%B %Y')}")
 m1, m2, m3, m4 = st.columns(4)
 
+#currently 4 metrics for FTBs
 with m1:
     val = latest_data_row['AveragePrice']
     st.metric("Avg Price (All)", f"£{val:,.0f}" if not pd.isna(val) else "N/A")
@@ -133,7 +130,6 @@ with m2:
     st.metric("Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A", 
               delta=f"{val:.1f}%" if not pd.isna(val) else None,
               delta_color="normal" if (not pd.isna(val) and val < 0) else "inverse")
-
 with m3:
     val = latest_data_row['FTBPrice']
     st.metric("FTB Price", f"£{val:,.0f}" if not pd.isna(val) else "N/A")
@@ -143,6 +139,6 @@ with m4:
     st.metric("FTB Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A",
               delta=f"{val:.1f}%" if not pd.isna(val) else None,
               delta_color="normal" if (not pd.isna(val) and val < 0) else "inverse")
-
+    
 st.markdown("---")
 st.caption(f"Showing data for: {selected_region}. Filter the time period using the sidebar.")
