@@ -142,3 +142,6 @@ with m5:
     st.metric("FTB Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A",
               delta=f"{val:.1f}%" if not pd.isna(val) else None,
               delta_color="normal" if (not pd.isna(val) and val < 0) else "inverse")
+
+st.markdown("---")
+st.caption(f"Showing data for: {selected_region}. Filter the time period using the sidebar.")
