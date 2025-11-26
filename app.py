@@ -3,14 +3,11 @@ import pandas as pd
 import plotly.express as px
 from datetime import date
 
-# Set up the Streamlit page configuration
 st.set_page_config(
     page_title="UK House Price Index Dashboard",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# --- Data Loading ---
 @st.cache_data
 def load_data():
     df = pd.read_csv("UK-HPI-full-Shorted 2.csv")
@@ -31,17 +28,25 @@ except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
 
-# --- Sidebar ---
+#navigation tab
+
+#country
+
+#region
 all_regions = sorted(df['RegionName'].unique())
 st.sidebar.header("Navigation Tab: Filter by region")
 st.sidebar.subheader("Afternoon Amber")
-
 default_region = 'Nottinghamshire' if 'Nottinghamshire' in all_regions else all_regions[0]
 selected_region = st.sidebar.selectbox("Select Region to Analyse:", options=all_regions, index=all_regions.index(default_region))
 
 min_date = df['Date'].min().date()
 max_date = df['Date'].max().date()
 date_range = st.sidebar.date_input("Select Time Period:", value=(min_date, max_date), min_value=min_date, max_value=max_date)
+
+# county
+
+#
+
 
 if len(date_range) == 2:
     start_date = pd.to_datetime(date_range[0])
@@ -117,7 +122,7 @@ st.markdown("---")
 st.subheader(f"Key Metrics for {latest_date.strftime('%B %Y')}")
 
 # We create 5 small columns here so the metrics align in a horizontal row at the bottom
-m1, m2, m3, m4, m5 = st.columns(5)
+m1, m2, m3, m4 = st.columns(4)
 
 with m1:
     val = latest_data_row['AveragePrice']
@@ -134,10 +139,6 @@ with m3:
     st.metric("FTB Price", f"£{val:,.0f}" if not pd.isna(val) else "N/A")
 
 with m4:
-    val = latest_data_row['FTBIndex']
-    st.metric("FTB Index", f"{val:.1f}" if not pd.isna(val) else "N/A")
-
-with m5:
     val = latest_data_row['FTB12m%Change']
     st.metric("FTB Annual Change", f"{val:.1f}%" if not pd.isna(val) else "N/A",
               delta=f"{val:.1f}%" if not pd.isna(val) else None,
